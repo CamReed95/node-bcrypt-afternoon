@@ -2,11 +2,31 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const massive = require('massive');
+const authController = require('../server/controllers/authController');
 
 const PORT = 4000;
+
+const {SESSION_SECRET, CONNECTION_STRING} = process.env;
 
 const app = express();
 
 app.use(express.json());
+
+massive(CONNECTION_STRING).then(db=> {
+    app.set('db', db);
+    console.log('db connected');
+})
+
+app.post('/auth/signup', (req, res, next) => {
+    const db = req.app.get('db');
+})
+
+app.use(
+    session({
+    resave: true, 
+    saveUninitialized: false, 
+    secret: SESSION_SECRET
+    })
+)
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
