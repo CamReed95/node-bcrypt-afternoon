@@ -1,32 +1,39 @@
-require('dotenv').config();
-const express = require('express');
-const session = require('express-session');
-const massive = require('massive');
-const authController = require('../server/controllers/authController');
+require('dotenv').config()
+const express = require('express')
+const session = require('express-session')
+const massive = require('massive')
 
-const PORT = 4000;
+const auth = require('./middleware/authMiddleware')
 
-const {SESSION_SECRET, CONNECTION_STRING} = process.env;
+const authCtrl = require('./controllers/authController')
+const treasureCtrl = require('./controllers/treasureController')
 
-const app = express();
+const app = express()
+const {CONNECTION_STRING, SESSION_SECRET, SERVER_PORT} = process.env
 
-app.use(express.json());
-
-massive(CONNECTION_STRING).then(db=> {
-    app.set('db', db);
-    console.log('db connected');
-})
-
-app.post('/auth/signup', (req, res, next) => {
-    const db = req.app.get('db');
-})
+app.use(express.json())
 
 app.use(
     session({
-    resave: true, 
-    saveUninitialized: false, 
-    secret: SESSION_SECRET
+        secret: SESSION_SECRET,
+        resave: true,
+        saveUninitialized: false
     })
 )
 
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+massive(CONNECTION_STRING).then(db => {
+    console.log(`connected to db`)
+    app.set('db', db)
+})
+
+app.listen(SERVER_PORT, () => {
+    console.log(`server listening on port ${SERVER_PORT}`)
+})
+
+app.post('/auth/register', authCtrl.register)
+app.post('/auth/login', authCtrl.login)
+app.get('/auth/logout', authCtrl.logout)
+app.get('/api/treasure/dragon', treasureCtrl.dragonTreasure)
+app.get('/api/treasure/user', auth.usersOnly, treasureCtrl.getUserTreasure)
+app.post('/api/treasure/user', auth.usersOnly, treasureCtrl.addUserTreasure)
+app.get('/api/treasure/all', auth.usersOnly, auth.adminsOnly, treasureCtrl.getAllTreasure)
